@@ -9,7 +9,7 @@ const app = express()
 const httpServer = createServer(app);
 
 app.use(cors({
-    origin:["http://localhost:5173","https://chef-gpt-client.vercel.app"],
+    origin:["http://localhost:5173","https://chef-gpt-ai-client.vercel.app/"],
     credentials:true
 }))
 app.use(express.json())
