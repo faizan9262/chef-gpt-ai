@@ -16,5 +16,8 @@ mongoDBConnect()
 app.use(cookieParser(process.env.JWT_SECRET));
 
 app.use('/api', router)
+app.get("/api/test", (_, res) => {
+  res.json({ message: "API working!" });
+});
 
 export default app;
