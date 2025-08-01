@@ -6,15 +6,12 @@ import type { CookieOptions } from "express";
 
 const USER_COOKIE_NAME = "auth-cookie";
 
-const isProduction = process.env.NODE_ENV === "production";
 
-const COOKIE_OPTIONS: CookieOptions = {
-  path: "/",
+const COOKIE_OPTIONS:CookieOptions = {
   httpOnly: true,
-  signed: true,
-  secure: isProduction,
-  sameSite: isProduction ? "none" : "lax", // ← now inferred correctly
-  expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 };
 
 export const registerUser = async (req: Request, res: Response) => {
