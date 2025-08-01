@@ -2,14 +2,19 @@ import { Request, Response } from "express";
 import { User } from "../model/user.model";
 import bcrypt from "bcrypt";
 import { createToken } from "../helper/token-manager";
+import type { CookieOptions } from "express";
 
 const USER_COOKIE_NAME = "auth-cookie";
-const COOKIE_OPTIONS = {
+
+const isProduction = process.env.NODE_ENV === "production";
+
+const COOKIE_OPTIONS: CookieOptions = {
   path: "/",
-  domain: "localhost",
   httpOnly: true,
   signed: true,
-  expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+  secure: isProduction,
+  sameSite: isProduction ? "none" : "lax", // ← now inferred correctly
+  expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
 };
 
 export const registerUser = async (req: Request, res: Response) => {
@@ -24,12 +29,9 @@ export const registerUser = async (req: Request, res: Response) => {
     if (existingUser) {
       return res.status(400).json({ error: "User already exists" });
     }
+
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new User({
-      username,
-      email,
-      password: hashedPassword,
-    });
+    const newUser = new User({ username, email, password: hashedPassword });
     await newUser.save();
 
     const token = createToken(newUser._id.toString(), email, 7 * 24 * 60 * 60);
@@ -38,7 +40,6 @@ export const registerUser = async (req: Request, res: Response) => {
     res.cookie(USER_COOKIE_NAME, token, COOKIE_OPTIONS);
 
     const populatedUser = await User.findById(newUser._id).select("-password");
-
     res.status(201).json(populatedUser);
   } catch (error) {
     console.error("Error registering user:", error);
@@ -54,27 +55,21 @@ export const loginUser = async (req: Request, res: Response) => {
     }
 
     const existingUser = await User.findOne({ email });
-    const ismMatched = await bcrypt.compare(password, existingUser.password);
-    if (!existingUser || !ismMatched) {
+    const isMatched = existingUser && await bcrypt.compare(password, existingUser.password);
+
+    if (!existingUser || !isMatched) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    const token = createToken(
-      existingUser._id.toString(),
-      email,
-      7 * 24 * 60 * 60
-    );
+    const token = createToken(existingUser._id.toString(), email, 7 * 24 * 60 * 60);
 
     res.clearCookie(USER_COOKIE_NAME, COOKIE_OPTIONS);
     res.cookie(USER_COOKIE_NAME, token, COOKIE_OPTIONS);
 
-    const populatedUser = await User.findById(existingUser._id).select(
-      "-password"
-    );
-
+    const populatedUser = await User.findById(existingUser._id).select("-password");
     res.status(200).json(populatedUser);
   } catch (error) {
-    console.error("Error registering user:", error);
+    console.error("Error logging in user:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -97,7 +92,7 @@ export const getUserProfile = async (req: Request, res: Response) => {
       return res.status(404).json({ error: "User not found" });
     }
     res.status(200).json(user);
-  } catch (error){
+  } catch (error) {
     console.error("Error getting user profile:", error);
     res.status(500).json({ error: "Internal server error" });
   }
