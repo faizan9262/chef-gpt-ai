@@ -10,7 +10,7 @@ app.use(cors({
   origin: ["http://localhost:5173", "https://chef-gpt-ai-client.vercel.app"],
   credentials: true,
 }));
-app.options("*", cors()); 
+// app.options("*", cors()); 
 app.use(express.json())
 mongoDBConnect()
 app.use(cookieParser(process.env.JWT_SECRET));
