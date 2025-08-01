@@ -13,7 +13,7 @@ app.use(cors({
 // app.options("*", cors()); 
 app.use(express.json())
 mongoDBConnect()
-app.use(cookieParser(process.env.JWT_SECRET));
+app.use(cookieParser(process.env.COOKIE_SECRET));
 
 app.use('/api', router)
 app.get("/api/test", (_, res) => {
